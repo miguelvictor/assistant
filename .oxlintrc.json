@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "typescript", "unicorn", "react"],
+  "ignorePatterns": [".astro/**", ".claude/**", ".cursor/**", ".github/**", ".vscode/**", "dist/**"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/react-in-jsx-scope": "off",
+    "react/no-children-prop": "off",
+    "no-unassigned-import": "off",
+    "triple-slash-reference": "off"
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  }
+}

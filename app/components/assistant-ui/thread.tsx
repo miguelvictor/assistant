@@ -19,7 +19,7 @@ import {
   RefreshCwIcon,
   SquareIcon,
 } from "lucide-react"
-import type { FC, PropsWithChildren } from "react"
+import type { FC } from "react"
 
 import {
   ComposerAddAttachment,
@@ -27,7 +27,6 @@ import {
   UserMessageAttachments,
 } from "~/components/assistant-ui/attachment"
 import { MarkdownText } from "~/components/assistant-ui/markdown-text"
-import { ToolFallback } from "~/components/assistant-ui/tool-fallback"
 import { TooltipIconButton } from "~/components/assistant-ui/tooltip-icon-button"
 import { Button } from "~/components/ui/button"
 import { cn } from "~/lib/utils"
@@ -85,7 +84,7 @@ const ThreadWelcome: FC = () => {
   return (
     <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-(--thread-max-width) grow flex-col">
       <div className="aui-thread-welcome-center flex w-full grow flex-col items-center justify-center">
-        <div className="aui-thread-welcome-message flex size-full flex-col justify-center px-4">
+        <div className="aui-thread-welcome-message flex size-full flex-col justify-center px-4 tracking-tighter">
           <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in text-2xl font-semibold duration-200">
             Hello there!
           </h1>
@@ -94,45 +93,6 @@ const ThreadWelcome: FC = () => {
           </p>
         </div>
       </div>
-      <ThreadSuggestions />
-    </div>
-  )
-}
-
-const SUGGESTIONS = [
-  {
-    title: "What's the weather",
-    label: "in San Francisco?",
-    prompt: "What's the weather in San Francisco?",
-  },
-  {
-    title: "Explain React hooks",
-    label: "like useState and useEffect",
-    prompt: "Explain React hooks like useState and useEffect",
-  },
-] as const
-
-const ThreadSuggestions: FC = () => {
-  return (
-    <div className="aui-thread-welcome-suggestions grid w-full gap-2 pb-4 @md:grid-cols-2">
-      {SUGGESTIONS.map((suggestion, index) => (
-        <div
-          key={suggestion.prompt}
-          className="aui-thread-welcome-suggestion-display fade-in slide-in-from-bottom-2 animate-in fill-mode-both duration-200 nth-[n+3]:hidden @md:nth-[n+3]:block"
-          style={{ animationDelay: `${100 + index * 50}ms` }}
-        >
-          <ThreadPrimitive.Suggestion prompt={suggestion.prompt} send asChild>
-            <Button
-              variant="ghost"
-              className="aui-thread-welcome-suggestion hover:bg-muted h-auto w-full flex-wrap items-start justify-start gap-1 rounded-2xl border px-4 py-3 text-left text-sm transition-colors @md:flex-col"
-              aria-label={suggestion.prompt}
-            >
-              <span className="aui-thread-welcome-suggestion-text-1 font-medium">{suggestion.title}</span>
-              <span className="aui-thread-welcome-suggestion-text-2 text-muted-foreground">{suggestion.label}</span>
-            </Button>
-          </ThreadPrimitive.Suggestion>
-        </div>
-      ))}
     </div>
   )
 }
@@ -144,7 +104,7 @@ const Composer: FC = () => {
         <ComposerAttachments />
         <ComposerPrimitive.Input
           placeholder="Send a message..."
-          className="aui-composer-input placeholder:text-muted-foreground mb-1 max-h-32 min-h-14 w-full resize-none bg-transparent px-4 pt-2 pb-3 text-sm outline-none focus-visible:ring-0"
+          className="aui-composer-input placeholder:text-muted-foreground mb-1 max-h-32 min-h-14 w-full resize-none bg-transparent px-4 pt-2 pb-3 text-sm tracking-tighter outline-none focus-visible:ring-0"
           rows={1}
           autoFocus
           aria-label="Message input"
@@ -203,22 +163,6 @@ const MessageError: FC = () => {
   )
 }
 
-const ToolGroup: FC<PropsWithChildren<{ startIndex: number; endIndex: number }>> = ({
-  startIndex,
-  endIndex,
-  children,
-}) => {
-  const toolCount = endIndex - startIndex + 1
-  return (
-    <details className="my-2">
-      <summary className="cursor-pointer font-medium">
-        {toolCount} tool {toolCount === 1 ? "call" : "calls"}
-      </summary>
-      <div className="space-y-2 pl-4">{children}</div>
-    </details>
-  )
-}
-
 const AssistantMessage: FC = () => {
   return (
     <MessagePrimitive.Root
@@ -231,8 +175,6 @@ const AssistantMessage: FC = () => {
             Reasoning: Reasoning,
             ReasoningGroup: ReasoningGroup,
             Text: MarkdownText,
-            ToolGroup: ToolGroup,
-            tools: { Fallback: ToolFallback },
           }}
         />
         <MessageError />

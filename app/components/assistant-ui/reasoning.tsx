@@ -4,7 +4,7 @@ import {
   useAssistantState,
   useScrollLock,
 } from "@assistant-ui/react"
-import { BrainIcon, ChevronDownIcon } from "lucide-react"
+import { BrainIcon, ChevronRightIcon } from "lucide-react"
 import { type FC, type PropsWithChildren, memo, useCallback, useRef, useState } from "react"
 
 import { MarkdownText } from "~/components/assistant-ui/markdown-text"
@@ -56,59 +56,76 @@ const ReasoningRoot: FC<
 ReasoningRoot.displayName = "ReasoningRoot"
 
 /**
- * Gradient overlay that softens the bottom edge during expand/collapse animations.
- * Animation: Fades out with delay when opening and fades back in when closing.
- */
-const GradientFade: FC<{ className?: string }> = ({ className }) => (
-  <div
-    className={cn(
-      "aui-reasoning-fade pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16",
-      "bg-[linear-gradient(to_top,var(--color-background),transparent)]",
-      "fade-in-0 animate-in",
-      "group-data-[state=open]/collapsible-content:animate-out",
-      "group-data-[state=open]/collapsible-content:fade-out-0",
-      "group-data-[state=open]/collapsible-content:delay-[calc(var(--animation-duration)*0.75)]", // calc for timing the delay
-      "group-data-[state=open]/collapsible-content:fill-mode-forwards",
-      "duration-(--animation-duration)",
-      "group-data-[state=open]/collapsible-content:duration-(--animation-duration)",
-      className,
-    )}
-  />
-)
-
-/**
  * Trigger button for the Reasoning collapsible.
  * Composed of icons, label, and text shimmer animation when reasoning is being streamed.
  */
-const ReasoningTrigger: FC<{ active: boolean; className?: string }> = ({ active, className }) => (
-  <CollapsibleTrigger
-    className={cn(
-      "aui-reasoning-trigger group/trigger text-muted-foreground hover:text-foreground -mb-2 flex max-w-[75%] items-center gap-2 py-2 text-sm transition-colors",
-      className,
-    )}
-  >
-    <BrainIcon className="aui-reasoning-trigger-icon size-4 shrink-0" />
-    <span className="aui-reasoning-trigger-label-wrapper relative inline-block leading-none">
-      <span>Reasoning</span>
-      {active ? (
-        <span
-          aria-hidden
-          className="aui-reasoning-trigger-shimmer shimmer pointer-events-none absolute inset-0 motion-reduce:animate-none"
-        >
-          Reasoning
-        </span>
-      ) : null}
-    </span>
-    <ChevronDownIcon
+const PATTERN = /^\*\*(.+)\*\*/
+const ReasoningTrigger: FC<{ className?: string }> = ({ className }) => {
+  const active = useAssistantState(({ message }) => {
+    if (message.status?.type !== "running") return false
+    const lastIndex = message.parts.length - 1
+    if (lastIndex < 0) return false
+    return true
+  })
+
+  const header = useAssistantState(({ message }) => {
+    // find the last reasoning and web search tool-call parts
+    const lastReasoningPartIdx = message.parts.findLastIndex((part) => part.type === "reasoning")
+    const lastSearchPartIdx = message.parts.findLastIndex(
+      (part) => part.type === "tool-call" && part.toolName === "web_search" && part.status.type === "complete",
+    )
+
+    // determine which part is later
+    const lastPartIdx = Math.max(lastReasoningPartIdx, lastSearchPartIdx)
+    if (lastPartIdx === -1) return "Thinking"
+
+    // extract header from the last reasoning part
+    const lastPart = message.parts[lastPartIdx]
+    if (lastPart.type === "reasoning") {
+      const match = PATTERN.exec(lastPart.text)
+      if (!match) console.warn("Failed to extract reasoning header", { text: lastPart.text })
+      return match ? match[1].trim() : "Thinking"
+    }
+
+    // assertion of the web_search tool
+    if (lastPart.type !== "tool-call" || lastPart.toolName !== "web_search" || lastPart.status.type !== "complete")
+      throw new Error("Unexpected tool-call part status")
+
+    // extract header from the last web search part's reasoning (if available)
+    const result = (lastPart.result as any).action as
+      | { type: "search"; query: string }
+      | { type: "openPage"; url: string }
+    if (result.type === "search") return `Searching web for ${result.query}`
+    if (result.type === "openPage") return `Reading page at ${result.url}`
+    return "Doing something else"
+  })
+
+  console.log({ active, header })
+
+  return (
+    <CollapsibleTrigger
       className={cn(
-        "aui-reasoning-trigger-chevron mt-0.5 size-4 shrink-0",
-        "transition-transform duration-(--animation-duration) ease-out",
-        "group-data-[state=closed]/trigger:-rotate-90",
-        "group-data-[state=open]/trigger:rotate-0",
+        "aui-reasoning-trigger group/trigger text-muted-foreground hover:text-foreground -mb-2 flex max-w-[75%] items-center gap-2 py-2 text-sm transition-colors",
+        className,
       )}
-    />
-  </CollapsibleTrigger>
-)
+    >
+      <BrainIcon className="aui-reasoning-trigger-icon size-4 shrink-0" />
+      <div className="aui-reasoning-trigger-label-wrapper relative line-clamp-1 inline-block text-left tracking-tighter">
+        {active ? header : "Thought for 22s"}
+      </div>
+      {!active && (
+        <ChevronRightIcon
+          className={cn(
+            "aui-reasoning-trigger-chevron mt-0.5 size-4 shrink-0",
+            "transition-transform duration-(--animation-duration) ease-out",
+            "group-data-[state=closed]/trigger:-rotate-90",
+            "group-data-[state=open]/trigger:rotate-0",
+          )}
+        />
+      )}
+    </CollapsibleTrigger>
+  )
+}
 
 /**
  * Collapsible content wrapper that handles height expand/collapse animation.
@@ -136,7 +153,6 @@ const ReasoningContent: FC<
     aria-busy={ariaBusy}
   >
     {children}
-    <GradientFade />
   </CollapsibleContent>
 )
 
@@ -208,24 +224,14 @@ const ReasoningImpl: ReasoningMessagePartComponent = () => <MarkdownText />
  * />
  * ```
  */
-const ReasoningGroupImpl: ReasoningGroupComponent = ({ children, startIndex, endIndex }) => {
-  /**
-   * Detects if reasoning is currently streaming within this group's range.
-   */
-  const isReasoningStreaming = useAssistantState(({ message }) => {
-    if (message.status?.type !== "running") return false
-    const lastIndex = message.parts.length - 1
-    if (lastIndex < 0) return false
-    const lastType = message.parts[lastIndex]?.type
-    if (lastType !== "reasoning") return false
-    return lastIndex >= startIndex && lastIndex <= endIndex
-  })
+const ReasoningGroupImpl: ReasoningGroupComponent = ({ children, startIndex }) => {
+  const isFirstReasoning = startIndex === 0 || startIndex === 1
+  if (!isFirstReasoning) return null
 
   return (
     <ReasoningRoot>
-      <ReasoningTrigger active={isReasoningStreaming} />
-
-      <ReasoningContent aria-busy={isReasoningStreaming}>
+      <ReasoningTrigger />
+      <ReasoningContent>
         <ReasoningText>{children}</ReasoningText>
       </ReasoningContent>
     </ReasoningRoot>

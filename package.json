@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "oxlint",
     "format": "prettier --write .",
-    "build": "react-router build",
+    "build": "react-router typegen && tsc && react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc"
@@ -40,7 +40,7 @@
     "@react-router/dev": "7.10.1",
     "@tailwindcss/vite": "^4.1.18",
     "@trivago/prettier-plugin-sort-imports": "^6.0.0",
-    "@types/node": "^22.19.2",
+    "@types/node": "^22.19.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "oxlint": "^1.32.0",

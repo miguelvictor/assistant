@@ -13,7 +13,7 @@ export async function action({ request }: Route.ActionArgs) {
   const payload: RequestArgs = await request.json()
   const result = streamText({
     system: SYSTEM_PROMPT,
-    model: "openai/gpt-5-mini",
+    model: openai.responses("gpt-5.2"),
     messages: convertToModelMessages(payload.messages),
     tools: {
       web_search: openai.tools.webSearch({

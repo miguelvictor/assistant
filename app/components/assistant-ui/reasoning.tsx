@@ -95,8 +95,11 @@ const ReasoningTrigger: FC<{ className?: string }> = ({ className }) => {
     const result = (lastPart.result as any).action as
       | { type: "search"; query: string }
       | { type: "openPage"; url: string }
+
+    if (!result) return "Searching the web"
     if (result.type === "search") return `Searching web for ${result.query}`
     if (result.type === "openPage") return `Reading page at ${result.url}`
+
     return "Doing something else"
   })
 

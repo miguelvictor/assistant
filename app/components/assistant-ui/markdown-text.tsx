@@ -93,7 +93,12 @@ const defaultComponents = memoizeMarkdownComponents({
     <p className={cn("aui-md-p mt-5 mb-5 leading-5 first:mt-0 last:mb-0", className)} {...props} />
   ),
   a: ({ className, ...props }) => (
-    <a className={cn("aui-md-a text-primary font-medium underline underline-offset-4", className)} {...props} />
+    <a
+      className={cn("aui-md-a text-primary font-medium underline underline-offset-4", className)}
+      {...props}
+      target="_blank"
+      rel="noreferrer noopener"
+    />
   ),
   blockquote: ({ className, ...props }) => (
     <blockquote className={cn("aui-md-blockquote border-l-2 pl-6 italic", className)} {...props} />

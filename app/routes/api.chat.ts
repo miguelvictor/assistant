@@ -1,39 +1,28 @@
-import { openai } from "@ai-sdk/openai"
-import { type UIMessage, convertToModelMessages, streamText } from "ai"
+import { type UIMessage, convertToModelMessages } from "ai"
 
-import { SYSTEM_PROMPT } from "~/lib/prompt"
+import { anthropicAgent } from "~/lib/agents/claude"
+import { geminiAgent } from "~/lib/agents/gemini"
+import { openaiAgent } from "~/lib/agents/openai"
 
 import type { Route } from "./+types/api.chat"
 
 interface RequestArgs {
+  provider: "openai" | "gemini" | "anthropic"
   messages: UIMessage[]
 }
 
 export async function action({ request }: Route.ActionArgs) {
   const payload: RequestArgs = await request.json()
-  const result = streamText({
-    system: SYSTEM_PROMPT,
-    model: openai.responses("gpt-5.2"),
-    messages: convertToModelMessages(payload.messages),
-    tools: {
-      web_search: openai.tools.webSearch({
-        externalWebAccess: true,
-        searchContextSize: "high",
-        userLocation: {
-          type: "approximate",
-          city: "Stockholm",
-          region: "Stockholm",
-          country: "SE",
-        },
-      }),
-    },
-    providerOptions: {
-      openai: {
-        reasoningEffort: "high",
-        reasoningSummary: "auto",
-      },
-    },
-  })
+  const messages = await convertToModelMessages(payload.messages)
+  const agent =
+    payload.provider === "openai"
+      ? openaiAgent
+      : payload.provider === "anthropic"
+        ? anthropicAgent
+        : payload.provider === "gemini"
+          ? geminiAgent
+          : null
 
-  return result.toUIMessageStreamResponse()
+  if (!agent) throw new Error(`invalid provider: ${payload.provider}`)
+  return await agent.stream({ messages }).then((result) => result.toUIMessageStreamResponse())
 }

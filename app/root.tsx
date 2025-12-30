@@ -1,3 +1,4 @@
+import { NuqsAdapter } from "nuqs/adapters/react-router/v7"
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse } from "react-router"
 
 import type { Route } from "./+types/root"
@@ -5,14 +6,14 @@ import "./app.css"
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body className="dark">
+      <body>
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -22,7 +23,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />
+  return (
+    <NuqsAdapter>
+      <Outlet />
+    </NuqsAdapter>
+  )
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

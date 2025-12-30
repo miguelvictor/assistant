@@ -3,7 +3,7 @@
 # Using specific versions for reproducible builds
 # -----------------------------------------------------------------------------
 FROM node:24-trixie AS node
-FROM oven/bun:1.3.4-debian AS bun
+FROM oven/bun:1.3.5-debian AS bun
 
 
 # -----------------------------------------------------------------------------
